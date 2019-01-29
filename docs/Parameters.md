@@ -31,7 +31,7 @@ Type: string
 
 Possible Values: null
 
-Default: https://raw.githubusercontent.com/Azure/Moodle/master/
+Default: https://raw.githubusercontent.com/ItalyPaleAle/LAMP/generalized/
 
 
 ### _artifactsLocationSasToken
@@ -81,39 +81,6 @@ Default: false
 ### vnetGwDeploySwitch
 
 Switch to deploy a virtual network gateway or not
-
-Type: bool
-
-Possible Values: null
-
-Default: false
-
-
-### installObjectFsSwitch
-
-Switch to install Moodle Object FS plugins (with Azure Blob storage)
-
-Type: bool
-
-Possible Values: null
-
-Default: false
-
-
-### installO365pluginsSwitch
-
-Switch to install Moodle Office 365 plugins. As of May 22, 2018, O365 plugins for Moodle 3.5 haven't been released, so to set this true, you must set the moodleVersion to 3.4 or below.
-
-Type: bool
-
-Possible Values: null
-
-Default: false
-
-
-### installGdprPluginsSwitch
-
-(Should be used only for Moodle 3.4 & 3.3) Switch to install Moodle GDPR plugins. Note these require Moodle versions 3.4.2+ or 3.3.5+ and these are included by default in Moodle 3.5. So if you choose MOODLE_35_STABLE as your moodleVersion, do not set this to true.
 
 Type: bool
 
@@ -617,17 +584,6 @@ Possible Values: ["none","azure","elastic"]
 Default: none
 
 
-### tikaService
-
-options of enabling tika service for file searching in moodle
-
-Type: string
-
-Possible Values: ["none","tika"]
-
-Default: none
-
-
 ### azureSearchSku
 
 the search service level you want to create.
@@ -675,17 +631,6 @@ Default: default
 ### elasticVmSku
 
 VM size for the elastic search nodes
-
-Type: string
-
-Possible Values: null
-
-Default: Standard_DS2_v2
-
-
-### tikaVmSku
-
-VM size for the tika search nodes
 
 Type: string
 

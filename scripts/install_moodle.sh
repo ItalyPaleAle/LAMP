@@ -49,20 +49,16 @@ set -ex
     echo $redisDns             >> /tmp/vars.txt
     echo $redisAuth            >> /tmp/vars.txt
     echo $elasticVm1IP         >> /tmp/vars.txt
-    echo $installO365pluginsSwitch    >> /tmp/vars.txt
     echo $dbServerType                >> /tmp/vars.txt
     echo $fileServerType              >> /tmp/vars.txt
     echo $mssqlDbServiceObjectiveName >> /tmp/vars.txt
     echo $mssqlDbEdition	>> /tmp/vars.txt
     echo $mssqlDbSize	>> /tmp/vars.txt
-    echo $installObjectFsSwitch >> /tmp/vars.txt
-    echo $installGdprPluginsSwitch >> /tmp/vars.txt
     echo $thumbprintSslCert >> /tmp/vars.txt
     echo $thumbprintCaCert >> /tmp/vars.txt
     echo $searchType >> /tmp/vars.txt
     echo $azureSearchKey >> /tmp/vars.txt
     echo $azureSearchNameHost >> /tmp/vars.txt
-    echo $tikaVmIP >> /tmp/vars.txt
     echo $nfsByoIpExportPath >> /tmp/vars.txt
 
     check_fileServerType_param $fileServerType
@@ -109,40 +105,6 @@ set -ex
         apt-get install -y postgresql-client-9.6
     fi
 
-    if [ "$installObjectFsSwitch" = "true" -o "$fileServerType" = "azurefiles" ]; then
-        # install azure cli & setup container
-        echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ wheezy main" | \
-            sudo tee /etc/apt/sources.list.d/azure-cli.list
-
-        curl -L https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add - >> /tmp/apt4.log
-        sudo apt-get -y install apt-transport-https >> /tmp/apt4.log
-        sudo apt-get -y update > /dev/null
-        sudo apt-get -y install azure-cli >> /tmp/apt4.log
-
-        az storage container create \
-            --name objectfs \
-            --account-name $storageAccountName \
-            --account-key $storageAccountKey \
-            --public-access off \
-            --fail-on-exist >> /tmp/wabs.log
-
-        az storage container policy create \
-            --account-name $storageAccountName \
-            --account-key $storageAccountKey \
-            --container-name objectfs \
-            --name readwrite \
-            --start $(date --date="1 day ago" +%F) \
-            --expiry $(date --date="2199-01-01" +%F) \
-            --permissions rw >> /tmp/wabs.log
-
-        sas=$(az storage container generate-sas \
-            --account-name $storageAccountName \
-            --account-key $storageAccountKey \
-            --name objectfs \
-            --policy readwrite \
-            --output tsv)
-    fi
-
     if [ $fileServerType = "gluster" ]; then
         # mount gluster files system
         echo -e '\n\rInstalling GlusterFS on '$glusterNode':/'$glusterVolume '/azlamp\n\r' 
@@ -161,7 +123,7 @@ set -ex
     sudo apt-get install -y --fix-missing python-software-properties unzip
 
     # install the entire stack
-    sudo apt-get -y  --force-yes install nginx php-fpm varnish >> /tmp/apt5a.log
+    sudo apt-get -y  --force-yes install nginx php-fpm >> /tmp/apt5a.log
     sudo apt-get -y  --force-yes install php php-cli php-curl php-zip >> /tmp/apt5b.log
 
     # LAMP requirements
@@ -194,11 +156,6 @@ set -ex
     # restart Nginx
     sudo service nginx restart
 
-    configure_varnish_on_controller
-    # Restart Varnish
-    systemctl daemon-reload
-    service varnish restart
-
     # Master config for syslog
     config_syslog_on_controller
     service rsyslog restart
@@ -206,9 +163,6 @@ set -ex
     # Turning off services we don't need the controller running
     service nginx stop
     service php${PhpVer}-fpm stop
-    service varnish stop
-    service varnishncsa stop
-    service varnishlog stop
 
     if [ $fileServerType = "azurefiles" ]; then
         # Delayed copy of moodle installation to the Azure Files share

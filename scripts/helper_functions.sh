@@ -39,20 +39,16 @@ function get_setup_params_from_configs_json
     export redisDns=$(echo $json | jq -r .moodleProfile.redisDns)
     export redisAuth=$(echo $json | jq -r .moodleProfile.redisKey)
     export elasticVm1IP=$(echo $json | jq -r .moodleProfile.elasticVm1IP)
-    export installO365pluginsSwitch=$(echo $json | jq -r .moodleProfile.installO365pluginsSwitch)
     export dbServerType=$(echo $json | jq -r .dbServerProfile.type)
     export fileServerType=$(echo $json | jq -r .fileServerProfile.type)
     export mssqlDbServiceObjectiveName=$(echo $json | jq -r .dbServerProfile.mssqlDbServiceObjectiveName)
     export mssqlDbEdition=$(echo $json | jq -r .dbServerProfile.mssqlDbEdition)
     export mssqlDbSize=$(echo $json | jq -r .dbServerProfile.mssqlDbSize)
-    export installObjectFsSwitch=$(echo $json | jq -r .moodleProfile.installObjectFsSwitch)
-    export installGdprPluginsSwitch=$(echo $json | jq -r .moodleProfile.installGdprPluginsSwitch)
     export thumbprintSslCert=$(echo $json | jq -r .siteProfile.thumbprintSslCert)
     export thumbprintCaCert=$(echo $json | jq -r .siteProfile.thumbprintCaCert)
     export searchType=$(echo $json | jq -r .moodleProfile.searchType)
     export azureSearchKey=$(echo $json | jq -r .moodleProfile.azureSearchKey)
     export azureSearchNameHost=$(echo $json | jq -r .moodleProfile.azureSearchNameHost)
-    export tikaVmIP=$(echo $json | jq -r .moodleProfile.tikaVmIP)
     export syslogServer=$(echo $json | jq -r .moodleProfile.syslogServer)
     export webServerType=$(echo $json | jq -r .moodleProfile.webServerType)
     export htmlLocalCopySwitch=$(echo $json | jq -r .moodleProfile.htmlLocalCopySwitch)
@@ -468,7 +464,7 @@ server {
         error_log syslog:server=localhost,facility=local1,severity=error,tag=moodle;
         access_log syslog:server=localhost,facility=local1,severity=notice,tag=moodle moodle_combined;
 
-        # Log XFF IP instead of varnish
+        # Log XFF IP instead of proxy
         set_real_ip_from    10.0.0.0/8;
         set_real_ip_from    127.0.0.1;
         set_real_ip_from    172.16.0.0/12;
@@ -506,7 +502,7 @@ server {
         error_log syslog:server=localhost,facility=local1,severity=error,tag=moodle;
         access_log syslog:server=localhost,facility=local1,severity=notice,tag=moodle moodle_combined;
 
-        # Log XFF IP instead of varnish
+        # Log XFF IP instead of proxy
         set_real_ip_from    10.0.0.0/8;
         set_real_ip_from    127.0.0.1;
         set_real_ip_from    172.16.0.0/12;
@@ -578,7 +574,7 @@ EOF
 EOF
     fi
     cat <<EOF >> /etc/apache2/sites-enabled/${siteFQDN}.conf
-    # Log X-Forwarded-For IP address instead of varnish (127.0.0.1)
+    # Log X-Forwarded-For IP address instead of proxy (127.0.0.1)
     SetEnvIf X-Forwarded-For "^.*\..*\..*\..*" forwarded
     LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" forwarded
@@ -714,7 +710,7 @@ server {
     error_log syslog:server=localhost,facility=local1,severity=error,tag=moodle;
     access_log syslog:server=localhost,facility=local1,severity=notice,tag=moodle moodle_combined;
 
-    # Log XFF IP instead of varnish
+    # Log XFF IP instead of proxy
     set_real_ip_from    10.0.0.0/8;
     set_real_ip_from    127.0.0.1;
     set_real_ip_from    172.16.0.0/12;
@@ -773,7 +769,7 @@ server {
     error_log syslog:server=localhost,facility=local1,severity=error,tag=moodle;
     access_log syslog:server=localhost,facility=local1,severity=notice,tag=moodle moodle_combined;
 
-    # Log XFF IP instead of varnish
+    # Log XFF IP instead of proxy
     set_real_ip_from    10.0.0.0/8;
     set_real_ip_from    127.0.0.1;
     set_real_ip_from    172.16.0.0/12;
@@ -820,81 +816,6 @@ function create_per_site_nginx_ssl_certs_on_controller
         chown -R www-data:www-data $certsDir
         chmod 0400 $certsDir/*
     fi
-}
-
-function download_and_place_per_site_moodle_and_plugins_on_controller
-{
-    local moodleVersion=${1}
-    local moodleHtmlDir=${2}
-    local installGdprPluginsSwitch=${3}
-    local installO365pluginsSwitch=${4}
-    local searchType=${5}
-    local installObjectFsSwitch=${6}
-
-    local o365pluginVersion=$(get_o365plugin_version_from_moodle_version $moodleVersion)
-    local moodleStableVersion=$o365pluginVersion  # Need Moodle stable version for GDPR plugins, and o365pluginVersion is just Moodle stable version, so reuse it.
-    local moodleUnzipDir=$(get_moodle_unzip_dir_from_moodle_version $moodleVersion)
-
-    mkdir -p /azlamp/tmp
-    cd /azlamp/tmp
-
-    if [ ! -d $moodleHtmlDir ]; then
-        # downloading moodle only if $moodleHtmlDir does not exist -- if it exists, user should populate it in advance correctly as below. This is to reduce template deployment time.
-        /usr/bin/curl -k --max-redirs 10 https://github.com/moodle/moodle/archive/$moodleVersion.zip -L -o moodle.zip
-        /usr/bin/unzip -q moodle.zip
-        /bin/mv $moodleUnzipDir $moodleHtmlDir
-    fi
-
-    if [ "$installGdprPluginsSwitch" = "true" ]; then
-        # install Moodle GDPR plugins (Note: This is only for Moodle versions 3.4.2+ or 3.3.5+ and will be included in Moodle 3.5, so no need for 3.5)
-        curl -k --max-redirs 10 https://github.com/moodlehq/moodle-tool_policy/archive/$moodleStableVersion.zip -L -o plugin-policy.zip
-        unzip -q plugin-policy.zip
-        mv moodle-tool_policy-$moodleStableVersion $moodleHtmlDir/admin/tool/policy
-
-        curl -k --max-redirs 10 https://github.com/moodlehq/moodle-tool_dataprivacy/archive/$moodleStableVersion.zip -L -o plugin-dataprivacy.zip
-        unzip -q plugin-dataprivacy.zip
-        mv moodle-tool_dataprivacy-$moodleStableVersion $moodleHtmlDir/admin/tool/dataprivacy
-    fi
-
-    if [ "$installO365pluginsSwitch" = "true" ]; then
-        # install Office 365 plugins
-        curl -k --max-redirs 10 https://github.com/Microsoft/o365-moodle/archive/$o365pluginVersion.zip -L -o o365.zip
-        unzip -q o365.zip
-        cp -r o365-moodle-$o365pluginVersion/* $moodleHtmlDir
-        rm -rf o365-moodle-$o365pluginVersion
-    fi
-
-    if [ "$searchType" = "elastic" ]; then
-        # Install ElasticSearch plugin
-        /usr/bin/curl -k --max-redirs 10 https://github.com/catalyst/moodle-search_elastic/archive/master.zip -L -o plugin-elastic.zip
-        /usr/bin/unzip -q plugin-elastic.zip
-        /bin/mv moodle-search_elastic-master $moodleHtmlDir/search/engine/elastic
-
-        # Install ElasticSearch plugin dependency
-        /usr/bin/curl -k --max-redirs 10 https://github.com/catalyst/moodle-local_aws/archive/master.zip -L -o local-aws.zip
-        /usr/bin/unzip -q local-aws.zip
-        /bin/mv moodle-local_aws-master $moodleHtmlDir/local/aws
-
-    elif [ "$searchType" = "azure" ]; then
-        # Install Azure Search service plugin
-        /usr/bin/curl -k --max-redirs 10 https://github.com/catalyst/moodle-search_azure/archive/master.zip -L -o plugin-azure-search.zip
-        /usr/bin/unzip -q plugin-azure-search.zip
-        /bin/mv moodle-search_azure-master $moodleHtmlDir/search/engine/azure
-    fi
-
-    if [ "$installObjectFsSwitch" = "true" ]; then
-        # Install the ObjectFS plugin
-        /usr/bin/curl -k --max-redirs 10 https://github.com/catalyst/moodle-tool_objectfs/archive/master.zip -L -o plugin-objectfs.zip
-        /usr/bin/unzip -q plugin-objectfs.zip
-        /bin/mv moodle-tool_objectfs-master $moodleHtmlDir/admin/tool/objectfs
-
-        # Install the ObjectFS Azure library
-        /usr/bin/curl -k --max-redirs 10 https://github.com/catalyst/moodle-local_azure_storage/archive/master.zip -L -o plugin-azurelibrary.zip
-        /usr/bin/unzip -q plugin-azurelibrary.zip
-        /bin/mv moodle-local_azure_storage-master $moodleHtmlDir/local/azure_storage
-    fi
-    cd /azlamp
-    rm -rf /azlamp/tmp
 }
 
 function setup_and_config_per_site_moodle_on_controller
@@ -1002,257 +923,6 @@ pm.max_spare_servers = 30
 EOF
 }
 
-function configure_varnish_on_controller
-{
-    # Configure varnish startup for 16.04
-    VARNISHSTART="ExecStart=\/usr\/sbin\/varnishd -j unix,user=vcache -F -a :80 -T localhost:6082 -f \/etc\/varnish\/moodle.vcl -S \/etc\/varnish\/secret -s malloc,1024m -p thread_pool_min=200 -p thread_pool_max=4000 -p thread_pool_add_delay=2 -p timeout_linger=100 -p timeout_idle=30 -p send_timeout=1800 -p thread_pools=4 -p http_max_hdr=512 -p workspace_backend=512k"
-    sed -i "s/^ExecStart.*/${VARNISHSTART}/" /lib/systemd/system/varnish.service
-
-    # Configure varnish VCL for moodle
-    cat <<EOF >> /etc/varnish/moodle.vcl
-vcl 4.0;
-
-import std;
-import directors;
-backend default {
-    .host = "localhost";
-    .port = "81";
-    .first_byte_timeout = 3600s;
-    .connect_timeout = 600s;
-    .between_bytes_timeout = 600s;
-}
-
-sub vcl_recv {
-    # Varnish does not support SPDY or HTTP/2.0 untill we upgrade to Varnish 5.0
-    if (req.method == "PRI") {
-        return (synth(405));
-    }
-
-    if (req.restarts == 0) {
-      if (req.http.X-Forwarded-For) {
-        set req.http.X-Forwarded-For = req.http.X-Forwarded-For + ", " + client.ip;
-      } else {
-        set req.http.X-Forwarded-For = client.ip;
-      }
-    }
-
-    # Non-RFC2616 or CONNECT HTTP requests methods filtered. Pipe requests directly to backend
-    if (req.method != "GET" &&
-        req.method != "HEAD" &&
-        req.method != "PUT" &&
-        req.method != "POST" &&
-        req.method != "TRACE" &&
-        req.method != "OPTIONS" &&
-        req.method != "DELETE") {
-      return (pipe);
-    }
-
-    # Varnish don't mess with healthchecks
-    if (req.url ~ "^/admin/tool/heartbeat" || req.url ~ "^/healthcheck.php")
-    {
-        return (pass);
-    }
-
-    # Pipe requests to backup.php straight to backend - prevents problem with progress bar long polling 503 problem
-    # This is here because backup.php is POSTing to itself - Filter before !GET&&!HEAD
-    if (req.url ~ "^/backup/backup.php")
-    {
-        return (pipe);
-    }
-
-    # Varnish only deals with GET and HEAD by default. If request method is not GET or HEAD, pass request to backend
-    if (req.method != "GET" && req.method != "HEAD") {
-      return (pass);
-    }
-
-    ### Rules for Moodle and Totara sites ###
-    # Moodle doesn't require Cookie to serve following assets. Remove Cookie header from request, so it will be looked up.
-    if ( req.url ~ "^/altlogin/.+/.+\.(png|jpg|jpeg|gif|css|js|webp)$" ||
-         req.url ~ "^/pix/.+\.(png|jpg|jpeg|gif)$" ||
-         req.url ~ "^/theme/font.php" ||
-         req.url ~ "^/theme/image.php" ||
-         req.url ~ "^/theme/javascript.php" ||
-         req.url ~ "^/theme/jquery.php" ||
-         req.url ~ "^/theme/styles.php" ||
-         req.url ~ "^/theme/yui" ||
-         req.url ~ "^/lib/javascript.php/-1/" ||
-         req.url ~ "^/lib/requirejs.php/-1/"
-        )
-    {
-        set req.http.X-Long-TTL = "86400";
-        unset req.http.Cookie;
-        return(hash);
-    }
-
-    # Perform lookup for selected assets that we know are static but Moodle still needs a Cookie
-    if(  req.url ~ "^/theme/.+\.(png|jpg|jpeg|gif|css|js|webp)" ||
-         req.url ~ "^/lib/.+\.(png|jpg|jpeg|gif|css|js|webp)" ||
-         req.url ~ "^/pluginfile.php/[0-9]+/course/overviewfiles/.+\.(?i)(png|jpg)$"
-      )
-    {
-         # Set internal temporary header, based on which we will do things in vcl_backend_response
-         set req.http.X-Long-TTL = "86400";
-         return (hash);
-    }
-
-    # Serve requests to SCORM checknet.txt from varnish. Have to remove get parameters. Response body always contains "1"
-    if ( req.url ~ "^/lib/yui/build/moodle-core-checknet/assets/checknet.txt" )
-    {
-        set req.url = regsub(req.url, "(.*)\?.*", "\1");
-        unset req.http.Cookie; # Will go to hash anyway at the end of vcl_recv
-        set req.http.X-Long-TTL = "86400";
-        return(hash);
-    }
-
-    # Requests containing "Cookie" or "Authorization" headers will not be cached
-    if (req.http.Authorization || req.http.Cookie) {
-        return (pass);
-    }
-
-    # Almost everything in Moodle correctly serves Cache-Control headers, if
-    # needed, which varnish will honor, but there are some which don't. Rather
-    # than explicitly finding them all and listing them here we just fail safe
-    # and don't cache unknown urls that get this far.
-    return (pass);
-}
-
-sub vcl_backend_response {
-    # Happens after we have read the response headers from the backend.
-    # 
-    # Here you clean the response headers, removing silly Set-Cookie headers
-    # and other mistakes your backend does.
-
-    # We know these assest are static, let's set TTL >0 and allow client caching
-    if ( beresp.http.Cache-Control && bereq.http.X-Long-TTL && beresp.ttl < std.duration(bereq.http.X-Long-TTL + "s", 1s) && !beresp.http.WWW-Authenticate )
-    { # If max-age < defined in X-Long-TTL header
-        set beresp.http.X-Orig-Pragma = beresp.http.Pragma; unset beresp.http.Pragma;
-        set beresp.http.X-Orig-Cache-Control = beresp.http.Cache-Control;
-        set beresp.http.Cache-Control = "public, max-age="+bereq.http.X-Long-TTL+", no-transform";
-        set beresp.ttl = std.duration(bereq.http.X-Long-TTL + "s", 1s);
-        unset bereq.http.X-Long-TTL;
-    }
-    else if( !beresp.http.Cache-Control && bereq.http.X-Long-TTL && !beresp.http.WWW-Authenticate ) {
-        set beresp.http.X-Orig-Pragma = beresp.http.Pragma; unset beresp.http.Pragma;
-        set beresp.http.Cache-Control = "public, max-age="+bereq.http.X-Long-TTL+", no-transform";
-        set beresp.ttl = std.duration(bereq.http.X-Long-TTL + "s", 1s);
-        unset bereq.http.X-Long-TTL;
-    }
-    else { # Don't touch headers if max-age > defined in X-Long-TTL header
-        unset bereq.http.X-Long-TTL;
-    }
-
-    # Here we set X-Trace header, prepending it to X-Trace header received from backend. Useful for troubleshooting
-    if(beresp.http.x-trace && !beresp.was_304) {
-        set beresp.http.X-Trace = regsub(server.identity, "^([^.]+),?.*$", "\1")+"->"+regsub(beresp.backend.name, "^(.+)\((?:[0-9]{1,3}\.){3}([0-9]{1,3})\)","\1(\2)")+"->"+beresp.http.X-Trace;
-    }
-    else {
-        set beresp.http.X-Trace = regsub(server.identity, "^([^.]+),?.*$", "\1")+"->"+regsub(beresp.backend.name, "^(.+)\((?:[0-9]{1,3}\.){3}([0-9]{1,3})\)","\1(\2)");
-    }
-
-    # Gzip JS, CSS is done at the ngnix level doing it here dosen't respect the no buffer requsets
-    # if (beresp.http.content-type ~ "application/javascript.*" || beresp.http.content-type ~ "text") {
-    #    set beresp.do_gzip = true;
-    #}
-}
-
-sub vcl_deliver {
-
-    # Revert back to original Cache-Control header before delivery to client
-    if (resp.http.X-Orig-Cache-Control)
-    {
-        set resp.http.Cache-Control = resp.http.X-Orig-Cache-Control;
-        unset resp.http.X-Orig-Cache-Control;
-    }
-
-    # Revert back to original Pragma header before delivery to client
-    if (resp.http.X-Orig-Pragma)
-    {
-        set resp.http.Pragma = resp.http.X-Orig-Pragma;
-        unset resp.http.X-Orig-Pragma;
-    }
-
-    # (Optional) X-Cache HTTP header will be added to responce, indicating whether object was retrieved from backend, or served from cache
-    if (obj.hits > 0) {
-        set resp.http.X-Cache = "HIT";
-    } else {
-        set resp.http.X-Cache = "MISS";
-    }
-
-    # Set X-AuthOK header when totara/varnsih authentication succeeded
-    if (req.http.X-AuthOK) {
-        set resp.http.X-AuthOK = req.http.X-AuthOK;
-    }
-
-    # If desired "Via: 1.1 Varnish-v4" response header can be removed from response
-    unset resp.http.Via;
-    unset resp.http.Server;
-
-    return(deliver);
-}
-
-sub vcl_backend_error {
-    # More comprehensive varnish error page. Display time, instance hostname, host header, url for easier troubleshooting.
-    set beresp.http.Content-Type = "text/html; charset=utf-8";
-    set beresp.http.Retry-After = "5";
-    synthetic( {"
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>"} + beresp.status + " " + beresp.reason + {"</title>
-    </head>
-    <body>
-      <h1>Error "} + beresp.status + " " + beresp.reason + {"</h1>
-      <p>"} + beresp.reason + {"</p>
-      <h3>Guru Meditation:</h3>
-      <p>Time: "} + now + {"</p>
-      <p>Node: "} + server.hostname + {"</p>
-      <p>Host: "} + bereq.http.host + {"</p>
-      <p>URL: "} + bereq.url + {"</p>
-      <p>XID: "} + bereq.xid + {"</p>
-      <hr>
-      <p>Varnish cache server
-    </body>
-  </html>
-  "} );
-   return (deliver);
-}
-
-sub vcl_synth {
-
-    #Redirect using '301 - Permanent Redirect', permanent redirect
-    if (resp.status == 851) { 
-        set resp.http.Location = req.http.x-redir;
-        set resp.http.X-Varnish-Redirect = true;
-        set resp.status = 301;
-        return (deliver);
-    }
-
-    #Redirect using '302 - Found', temporary redirect
-    if (resp.status == 852) { 
-        set resp.http.Location = req.http.x-redir;
-        set resp.http.X-Varnish-Redirect = true;
-        set resp.status = 302;
-        return (deliver);
-    }
-
-    #Redirect using '307 - Temporary Redirect', !GET&&!HEAD requests, dont change method on redirected requests
-    if (resp.status == 857) {
-        set resp.http.Location = req.http.x-redir;
-        set resp.http.X-Varnish-Redirect = true;
-        set resp.status = 307;
-        return (deliver);
-    }
-
-    #Respond with 403 - Forbidden
-    if (resp.status == 863) {
-        set resp.http.X-Varnish-Error = true;
-        set resp.status = 403;
-        return (deliver);
-    }
-}
-EOF
-}
-
 function create_per_site_sql_db_from_controller
 {
     local dbServerType=${1}
@@ -1329,7 +999,7 @@ function add_another_moodle_site_on_controller_after_deployment
     mkdir -p $moodleDataDir
     mkdir -p $moodleCertsDir
 
-    download_and_place_per_site_moodle_and_plugins_on_controller $moodleVersion $moodleHtmlDir false false false
+    #download_and_place_per_site_moodle_and_plugins_on_controller $moodleVersion $moodleHtmlDir false false false
     create_per_site_nginx_conf_on_controller $siteFQDN $httpsTermination $moodleHtmlDir $moodleCertsDir
     create_per_site_nginx_ssl_certs_on_controller $siteFQDN $moodleCertsDir $httpsTermination None None
     create_per_site_sql_db_from_controller $dbServerType $dbIP $dbadminloginazure $dbadminpass $moodledbname $moodledbuser $moodledbpass None None None

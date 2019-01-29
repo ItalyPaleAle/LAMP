@@ -64,31 +64,6 @@
         {
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2017-10-01",
-            "name": "[concat(parameters('vnetName'), '/', parameters('moodleCommon').subnetTika)]",
-            "location": "[parameters('moodleCommon').location]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('moodleCommon').subnetElastic)]"
-            ],
-            "properties": {
-                "addressPrefix": "[parameters('moodleCommon').subnetTikaRange]"
-            }
-        },
-        {
-            "condition": "[parameters('moodleCommon').vnetGwDeploySwitch]",
-            "type": "Microsoft.Network/virtualNetworks/subnets",
-            "apiVersion": "2017-10-01",
-            "name": "[concat(parameters('vnetName'), '/', parameters('moodleCommon').subnetGateway)]",
-            "location": "[parameters('moodleCommon').location]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('moodleCommon').subnetTika)]"
-            ],
-            "properties": {
-                "addressPrefix": "[parameters('moodleCommon').subnetGatewayRange]"
-            }
-        },
-        {
-            "type": "Microsoft.Network/virtualNetworks/subnets",
-            "apiVersion": "2017-10-01",
             "name": "[concat(parameters('vnetName'), '/', parameters('moodleCommon').subnetAppGw)]",
             "location": "[parameters('moodleCommon').location]",
             "dependsOn": [

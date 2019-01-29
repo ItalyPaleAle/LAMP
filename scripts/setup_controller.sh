@@ -24,13 +24,12 @@ set -ex
 
 #parameters 
 {
-    moodle_on_azure_configs_json_path=${1}
+    lamp_on_azure_configs_json_path=${1}
 
     . ./helper_functions.sh
 
-    get_setup_params_from_configs_json $moodle_on_azure_configs_json_path || exit 99
+    get_setup_params_from_configs_json $lamp_on_azure_configs_json_path || exit 99
 
-    echo $moodleVersion        >> /tmp/vars.txt
     echo $glusterNode          >> /tmp/vars.txt
     echo $glusterVolume        >> /tmp/vars.txt
     echo $siteFQDN             >> /tmp/vars.txt
@@ -48,7 +47,6 @@ set -ex
     echo $azuremoodledbuser    >> /tmp/vars.txt
     echo $redisDns             >> /tmp/vars.txt
     echo $redisAuth            >> /tmp/vars.txt
-    echo $elasticVm1IP         >> /tmp/vars.txt
     echo $dbServerType                >> /tmp/vars.txt
     echo $fileServerType              >> /tmp/vars.txt
     echo $mssqlDbServiceObjectiveName >> /tmp/vars.txt
@@ -56,16 +54,13 @@ set -ex
     echo $mssqlDbSize	>> /tmp/vars.txt
     echo $thumbprintSslCert >> /tmp/vars.txt
     echo $thumbprintCaCert >> /tmp/vars.txt
-    echo $searchType >> /tmp/vars.txt
-    echo $azureSearchKey >> /tmp/vars.txt
-    echo $azureSearchNameHost >> /tmp/vars.txt
     echo $nfsByoIpExportPath >> /tmp/vars.txt
 
     check_fileServerType_param $fileServerType
 
     # make sure system does automatic updates and fail2ban
-    sudo apt-get -y update
-    sudo apt-get -y install unattended-upgrades fail2ban
+    apt-get -y update
+    apt-get -y install unattended-upgrades fail2ban
 
     config_fail2ban
 
@@ -76,31 +71,31 @@ set -ex
 
     if [ $fileServerType = "gluster" ]; then
         # configure gluster repository & install gluster client
-        sudo add-apt-repository ppa:gluster/glusterfs-3.10 -y                 >> /tmp/apt1.log
+        add-apt-repository ppa:gluster/glusterfs-3.10 -y                 >> /tmp/apt1.log
     elif [ $fileServerType = "nfs" ]; then
         # configure NFS server and export
         setup_raid_disk_and_filesystem /azlamp /dev/md1 /dev/md1p1
         configure_nfs_server_and_export /azlamp
     fi
 
-    sudo apt-get -y update                                                   >> /tmp/apt2.log
-    sudo apt-get -y --force-yes install rsyslog git                          >> /tmp/apt3.log
+    apt-get -y update                                                   >> /tmp/apt2.log
+    apt-get -y --force-yes install rsyslog git                          >> /tmp/apt3.log
 
     if [ $fileServerType = "gluster" ]; then
-        sudo apt-get -y --force-yes install glusterfs-client                 >> /tmp/apt3.log
+        apt-get -y --force-yes install glusterfs-client                 >> /tmp/apt3.log
     elif [ "$fileServerType" = "azurefiles" ]; then
-        sudo apt-get -y --force-yes install cifs-utils                       >> /tmp/apt3.log
+        apt-get -y --force-yes install cifs-utils                       >> /tmp/apt3.log
     fi
 
     if [ $dbServerType = "mysql" ]; then
-        sudo apt-get -y --force-yes install mysql-client >> /tmp/apt3.log
+        apt-get -y --force-yes install mysql-client >> /tmp/apt3.log
     elif [ "$dbServerType" = "postgres" ]; then
-        #sudo apt-get -y --force-yes install postgresql-client >> /tmp/apt3.log
+        #apt-get -y --force-yes install postgresql-client >> /tmp/apt3.log
         # Get a new version of Postgres to match Azure version (default Xenial postgresql-client version--previous line--is 9.5)
         # Note that this was done after create_db, but before pg_dump cron job setup (no idea why). If this change
         # causes any pgres install issue, consider reverting this ordering change...
         add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main"
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
         apt-get update
         apt-get install -y postgresql-client-9.6
     fi
@@ -120,24 +115,24 @@ set -ex
     fi
     
     # install pre-requisites
-    sudo apt-get install -y --fix-missing python-software-properties unzip
+    apt-get install -y --fix-missing python-software-properties unzip
 
     # install the entire stack
-    sudo apt-get -y  --force-yes install nginx php-fpm >> /tmp/apt5a.log
-    sudo apt-get -y  --force-yes install php php-cli php-curl php-zip >> /tmp/apt5b.log
+    apt-get -y  --force-yes install nginx php-fpm >> /tmp/apt5a.log
+    apt-get -y  --force-yes install php php-cli php-curl php-zip >> /tmp/apt5b.log
 
     # LAMP requirements
-    sudo apt-get -y update > /dev/null
-    sudo apt-get install -y --force-yes graphviz aspell php-common php-soap php-json php-redis > /tmp/apt6.log
-    sudo apt-get install -y --force-yes php-bcmath php-gd php-xmlrpc php-intl php-xml php-bz2 php-pear php-mbstring php-dev mcrypt >> /tmp/apt6.log
+    apt-get -y update > /dev/null
+    apt-get install -y --force-yes graphviz aspell php-common php-soap php-json php-redis > /tmp/apt6.log
+    apt-get install -y --force-yes php-bcmath php-gd php-xmlrpc php-intl php-xml php-bz2 php-pear php-mbstring php-dev mcrypt >> /tmp/apt6.log
     PhpVer=$(get_php_version)
     if [ $dbServerType = "mysql" ]; then
-        sudo apt-get install -y --force-yes php-mysql
+        apt-get install -y --force-yes php-mysql
     elif [ $dbServerType = "mssql" ]; then
-        sudo apt-get install -y libapache2-mod-php  # Need this because install_php_mssql_driver tries to update apache2-mod-php settings always (which will fail without this)
+        apt-get install -y libapache2-mod-php  # Need this because install_php_mssql_driver tries to update apache2-mod-php settings always (which will fail without this)
         install_php_mssql_driver
     else
-        sudo apt-get install -y --force-yes php-pgsql
+        apt-get install -y --force-yes php-pgsql
     fi
 
     # Set up initial LAMP dirs
@@ -154,7 +149,7 @@ set -ex
     rm -f /etc/nginx/sites-enabled/default
 
     # restart Nginx
-    sudo service nginx restart
+    service nginx restart
 
     # Master config for syslog
     config_syslog_on_controller
@@ -183,7 +178,7 @@ set -ex
 
     # chmod /azlamp for Azure NetApp Files (its default is 770!)
     if [ $fileServerType = "nfs-byo" ]; then
-        sudo chmod +rx /azlamp
+        chmod +rx /azlamp
     fi
 
     create_last_modified_time_update_script

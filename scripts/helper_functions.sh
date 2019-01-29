@@ -20,7 +20,6 @@ function get_setup_params_from_configs_json
     done
 
     local json=$(cat $configs_json_path)
-    export moodleVersion=$(echo $json | jq -r .moodleProfile.version)
     export glusterNode=$(echo $json | jq -r .fileServerProfile.glusterVmName)
     export glusterVolume=$(echo $json | jq -r .fileServerProfile.glusterVolName)
     export siteFQDN=$(echo $json | jq -r .siteProfile.siteURL)
@@ -38,7 +37,6 @@ function get_setup_params_from_configs_json
     export azuremoodledbuser=$(echo $json | jq -r .moodleProfile.dbUserAzure)
     export redisDns=$(echo $json | jq -r .moodleProfile.redisDns)
     export redisAuth=$(echo $json | jq -r .moodleProfile.redisKey)
-    export elasticVm1IP=$(echo $json | jq -r .moodleProfile.elasticVm1IP)
     export dbServerType=$(echo $json | jq -r .dbServerProfile.type)
     export fileServerType=$(echo $json | jq -r .fileServerProfile.type)
     export mssqlDbServiceObjectiveName=$(echo $json | jq -r .dbServerProfile.mssqlDbServiceObjectiveName)
@@ -46,9 +44,6 @@ function get_setup_params_from_configs_json
     export mssqlDbSize=$(echo $json | jq -r .dbServerProfile.mssqlDbSize)
     export thumbprintSslCert=$(echo $json | jq -r .siteProfile.thumbprintSslCert)
     export thumbprintCaCert=$(echo $json | jq -r .siteProfile.thumbprintCaCert)
-    export searchType=$(echo $json | jq -r .moodleProfile.searchType)
-    export azureSearchKey=$(echo $json | jq -r .moodleProfile.azureSearchKey)
-    export azureSearchNameHost=$(echo $json | jq -r .moodleProfile.azureSearchNameHost)
     export syslogServer=$(echo $json | jq -r .moodleProfile.syslogServer)
     export webServerType=$(echo $json | jq -r .moodleProfile.webServerType)
     export htmlLocalCopySwitch=$(echo $json | jq -r .moodleProfile.htmlLocalCopySwitch)
@@ -403,32 +398,6 @@ EOF
 
 function run_once_last_modified_time_update_script {
   $LAST_MODIFIED_TIME_UPDATE_SCRIPT_FULLPATH
-}
-
-# O365 plugins are released only for 'MOODLE_xy_STABLE',
-# whereas we want to support the Moodle tagged versions (e.g., 'v3.4.2').
-# This function helps getting the stable version # (for O365 plugin ver.)
-# from a Moodle version tag. This utility function recognizes tag names
-# of the form 'vx.y.z' only.
-function get_o365plugin_version_from_moodle_version {
-  local moodleVersion=${1}
-  if [[ "$moodleVersion" =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-    echo "MOODLE_${BASH_REMATCH[1]}${BASH_REMATCH[2]}_STABLE"
-  else
-    echo $moodleVersion
-  fi
-}
-
-# For Moodle tags (e.g., "v3.4.2"), the unzipped Moodle dir is no longer
-# "moodle-$moodleVersion", because for tags, it's without "v". That is,
-# it's "moodle-3.4.2". Therefore, we need a separate helper function for that...
-function get_moodle_unzip_dir_from_moodle_version {
-  local moodleVersion=${1}
-  if [[ "$moodleVersion" =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-    echo "moodle-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
-  else
-    echo "moodle-$moodleVersion"
-  fi
 }
 
 function config_one_site_on_vmss
@@ -979,7 +948,7 @@ EOF
 # - There must be other restrictions...
 function add_another_moodle_site_on_controller_after_deployment
 {
-    local moodleVersion=${1}  # E.g., "MOODLE_35_STABLE"
+    local moodleVersion="MOODLE_35_STABLE"
     local siteFQDN=${2}       # E.g., "moodle.site2.edu"
     local httpsTermination=${3} # E.g., "VMSS" or "None"
     local dbServerType=${4}   # E.g., "mysql" or "postgres"

@@ -155,17 +155,6 @@ Possible Values: null
 Default: www.example.org
 
 
-### moodleVersion
-
-The Moodle version you want to install.
-
-Type: string
-
-Possible Values: ["MOODLE_35_STABLE","MOODLE_34_STABLE","v3.4.3","v3.4.2","v3.4.1","MOODLE_33_STABLE","MOODLE_32_STABLE","MOODLE_31_STABLE","MOODLE_30_STABLE","MOODLE_29_STABLE"]
-
-Default: MOODLE_35_STABLE
-
-
 ### sshPublicKey
 
 ssh public key
@@ -571,72 +560,6 @@ Type: string
 Possible Values: ["Standard_LRS","Standard_GRS","Standard_ZRS"]
 
 Default: Standard_LRS
-
-
-### searchType
-
-options of moodle global search
-
-Type: string
-
-Possible Values: ["none","azure","elastic"]
-
-Default: none
-
-
-### azureSearchSku
-
-the search service level you want to create.
-
-Type: string
-
-Possible Values: ["free","basic","standard","standard2","standard3"]
-
-Default: basic
-
-
-### azureSearchReplicaCount
-
-Replicas distribute search workloads across the service. You need 2 or more to support high availability (applies to Basic and Standard only).
-
-Type: int
-
-Possible Values: null
-
-Default: 3
-
-
-### azureSearchPartitionCount
-
-Partitions allow for scaling of document count as well as faster indexing by sharding your index over multiple Azure Search units.
-
-Type: int
-
-Possible Values: [1,2,3,4,6,12]
-
-Default: 1
-
-
-### azureSearchHostingMode
-
-Applicable only for azureSearchSku set to standard3. You can set this property to enable a single, high density partition that allows up to 1000 indexes, which is much higher than the maximum indexes allowed for any other azureSearchSku.
-
-Type: string
-
-Possible Values: ["default","highDensity"]
-
-Default: default
-
-
-### elasticVmSku
-
-VM size for the elastic search nodes
-
-Type: string
-
-Possible Values: null
-
-Default: Standard_DS2_v2
 
 
 ### customVnetId

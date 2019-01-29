@@ -1,5 +1,3 @@
-# Custom Script for Linux
-
 #!/bin/bash
 
 # The MIT License (MIT)
@@ -24,11 +22,11 @@
 
 set -ex
 
-moodle_on_azure_configs_json_path=${1}
+lamp_on_azure_configs_json_path=${1}
 
 . ./helper_functions.sh
 
-get_setup_params_from_configs_json $moodle_on_azure_configs_json_path || exit 99
+get_setup_params_from_configs_json $lamp_on_azure_configs_json_path || exit 99
 
 echo $glusterNode    >> /tmp/vars.txt
 echo $glusterVolume  >> /tmp/vars.txt

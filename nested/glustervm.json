@@ -10,7 +10,7 @@
         },
         "lampCommon": {
             "metadata": {
-                "description": "Common Moodle values"
+                "description": "Common LAMP values"
             },
             "type": "object"
         },

@@ -4,7 +4,7 @@
     "parameters": {
         "lampCommon": {
             "metadata": {
-                "description": "Common Moodle values"
+                "description": "Common LAMP values"
             },
             "type": "object"
         },
@@ -196,7 +196,7 @@
         }
     ],
     "variables": {
-        "documentation01": "This sub-template drives the controller/jump-box which is used as the access-point for other moodle VM's ",
+        "documentation01": "This sub-template drives the controller/jump-box which is used as the access-point for other VMs in the cluster",
         "documentation02": "It expects certain values in the 'common' datastructure.",
         "documentation03": "    vnetName     - name of virtual network",
         "documentation04": "    subnetWeb    - name of subnet for controller (and vm scale set)",

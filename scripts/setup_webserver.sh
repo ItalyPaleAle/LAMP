@@ -46,40 +46,39 @@ check_fileServerType_param $fileServerType
 
 {
   # make sure the system does automatic update
-  sudo apt-get -y update
-  sudo apt-get -y install unattended-upgrades
+  apt-get -y update
+  apt-get -y install unattended-upgrades
 
   # install pre-requisites
-  sudo apt-get -y install python-software-properties unzip rsyslog
+  apt-get -y install python-software-properties unzip rsyslog
 
-  sudo apt-get -y install postgresql-client mysql-client git
+  apt-get -y install postgresql-client mysql-client git
 
   if [ $fileServerType = "gluster" ]; then
     #configure gluster repository & install gluster client
-    sudo add-apt-repository ppa:gluster/glusterfs-3.10 -y
-    sudo apt-get -y update
-    sudo apt-get -y install glusterfs-client
+    add-apt-repository ppa:gluster/glusterfs-3.10 -y
+    apt-get -y update
+    apt-get -y install glusterfs-client
   elif [ "$fileServerType" = "azurefiles" ]; then
-    sudo apt-get -y install cifs-utils
+    apt-get -y install cifs-utils
   fi
 
   # install the base stack
-  sudo apt-get -y install php php-cli php-curl php-zip php-pear php-mbstring php-dev mcrypt
+  apt-get -y install php php-cli php-curl php-zip php-pear php-mbstring php-dev mcrypt php-soap php-json php-redis php-bcmath php-gd php-pgsql php-mysql php-xmlrpc php-intl php-xml php-bz2
 
   if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ]; then
-    sudo apt-get -y install nginx
+    apt-get -y install nginx
   fi
 
   if [ "$webServerType" = "apache" ]; then
     # install apache pacakges
-    sudo apt-get -y install apache2 libapache2-mod-php
+    apt-get -y install apache2 libapache2-mod-php
   else
     # for nginx-only option
-    sudo apt-get -y install php-fpm
+    apt-get -y install php-fpm
   fi
 
-  # Moodle requirements
-  sudo apt-get install -y graphviz aspell php-soap php-json php-redis php-bcmath php-gd php-pgsql php-mysql php-xmlrpc php-intl php-xml php-bz2
+  # MSSQL
   if [ "$dbServerType" = "mssql" ]; then
     install_php_mssql_driver
   fi
@@ -89,10 +88,10 @@ check_fileServerType_param $fileServerType
 
   if [ $fileServerType = "gluster" ]; then
     # Mount gluster fs for /azlamp
-    sudo mkdir -p /azlamp
-    sudo chown www-data /azlamp
-    sudo chmod 770 /azlamp
-    sudo echo -e 'Adding Gluster FS to /etc/fstab and mounting it'
+    mkdir -p /azlamp
+    chown www-data /azlamp
+    chmod 770 /azlamp
+    echo -e 'Adding Gluster FS to /etc/fstab and mounting it'
     setup_and_mount_gluster_share $glusterNode $glusterVolume /azlamp
   elif [ $fileServerType = "nfs" ]; then
     # mount NFS export (set up on controller VM--No HA)
@@ -232,7 +231,7 @@ EOF
      # update startup script to wait for certificate in /azlamp mount
      setup_azlamp_mount_dependency_for_systemd_service nginx || exit 1
      # restart Nginx
-     sudo service nginx restart 
+     service nginx restart 
    fi
 
    if [ "$webServerType" = "nginx" ]; then
@@ -259,7 +258,7 @@ EOF
       if [ "$htmlLocalCopySwitch" != "true" ]; then
         setup_azlamp_mount_dependency_for_systemd_service apache2 || exit 1
       fi
-      sudo service apache2 restart
+      service apache2 restart
    fi
 
 }  > /tmp/setup.log

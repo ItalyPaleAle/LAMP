@@ -787,76 +787,6 @@ function create_per_site_nginx_ssl_certs_on_controller
     fi
 }
 
-function setup_and_config_per_site_moodle_on_controller
-{
-    local httpsTermination=${1}
-    local siteFQDN=${2}
-    local dbServerType=${3}
-    local moodleHtmlDir=${4}
-    local moodleDataDir=${5}
-    local dbIP=${6}
-    local moodledbname=${7}
-    local azuremoodledbuser=${8}
-    local moodledbpass=${9}
-    local adminpass=${10}
-
-    if [ "$httpsTermination" = "None" ]; then
-        local siteProtocol="http"
-    else
-        local siteProtocol="https"
-    fi
-    if [ $dbServerType = "mysql" ]; then
-        local dbtype="mysqli"
-    elif [ $dbServerType = "mssql" ]; then
-        local dbtype="sqlsrv"
-    else # $dbServerType = "postgres"
-        local dbtype="pgsql"
-    fi
-    cd /tmp; /usr/bin/php $moodleHtmlDir/admin/cli/install.php --chmod=770 --lang=en_us --wwwroot=$siteProtocol://$siteFQDN   --dataroot=$moodleDataDir --dbhost=$dbIP   --dbname=$moodledbname   --dbuser=$azuremoodledbuser   --dbpass=$moodledbpass   --dbtype=$dbtype --fullname='Moodle LMS' --shortname='Moodle' --adminuser=admin --adminpass=$adminpass   --adminemail=admin@$siteFQDN   --non-interactive --agree-license --allow-unstable || true
-
-    echo -e "\n\rDone! Installation completed!\n\r"
-
-    local configPhpPath="$moodleHtmlDir/config.php"
-
-    if [ "$httpsTermination" != "None" ]; then
-        # We proxy ssl, so moodle needs to know this
-        sed -i "23 a \$CFG->sslproxy  = 'true';" $configPhpPath
-    fi
-
-    # Make sure the config.php is readable for web server process (www-data). The initial permission might be readable only for creator (root in our case).
-    chmod +r $configPhpPath
-    # Also make sure to update moodleDataDir's owner (to be writable for www-data web server process)
-    chown -R www-data.www-data $moodleDataDir
-}
-
-function setup_per_site_moodle_cron_jobs_on_controller
-{
-    local moodleHtmlDir=${1}
-    local siteFQDN=${2}
-    local dbServerType=${3}
-    local dbIP=${4}
-    local moodledbname=${5}
-    local azuremoodledbuser=${6}
-    local moodledbpass=${7}
-
-    # create cron entry
-    # It is scheduled for once per minute. It can be changed as needed.
-    echo '* * * * * www-data /usr/bin/php '$moodleHtmlDir'/admin/cli/cron.php 2>&1 | /usr/bin/logger -p local2.notice -t moodle' > /etc/cron.d/moodle-cron-$siteFQDN
-
-    # Set up cronned sql dump
-    sqlBackupCronDefPath="/etc/cron.d/moodle-sql-backup-$siteFQDN"
-    if [ "$dbServerType" = "mysql" ]; then
-        cat <<EOF > $sqlBackupCronDefPath
-  22 02 * * * root /usr/bin/mysqldump -h $dbIP -u ${azuremoodledbuser} -p'${moodledbpass}' --databases ${moodledbname} | gzip > /azlamp/data/$siteFQDN/db-backup.sql.gz
-EOF
-    elif [ "$dbServerType" = "postgres" ]; then
-        cat <<EOF > $sqlBackupCronDefPath
-  22 02 * * * root /usr/bin/pg_dump -Fc -h $dbIP -U ${azuremoodledbuser} ${moodledbname} > /azlamp/data/$siteFQDN/db-backup.sql
-EOF
-    #else # mssql. TODO It's missed earlier! Complete this!
-    fi
-}
-
 function update_php_config_on_controller
 {
     # php config
@@ -969,11 +899,11 @@ function add_another_moodle_site_on_controller_after_deployment
     mkdir -p $moodleCertsDir
 
     #download_and_place_per_site_moodle_and_plugins_on_controller $moodleVersion $moodleHtmlDir false false false
-    create_per_site_nginx_conf_on_controller $siteFQDN $httpsTermination $moodleHtmlDir $moodleCertsDir
-    create_per_site_nginx_ssl_certs_on_controller $siteFQDN $moodleCertsDir $httpsTermination None None
-    create_per_site_sql_db_from_controller $dbServerType $dbIP $dbadminloginazure $dbadminpass $moodledbname $moodledbuser $moodledbpass None None None
-    setup_and_config_per_site_moodle_on_controller $httpsTermination $siteFQDN $dbServerType $moodleHtmlDir $moodleDataDir $dbIP $moodledbname $azuremoodledbuser $moodledbpass $adminpass
-    setup_per_site_moodle_cron_jobs_on_controller $moodleHtmlDir $siteFQDN $dbServerType $dbIP $moodledbname $azuremoodledbuser $moodledbpass
+    #create_per_site_nginx_conf_on_controller $siteFQDN $httpsTermination $moodleHtmlDir $moodleCertsDir
+    #create_per_site_nginx_ssl_certs_on_controller $siteFQDN $moodleCertsDir $httpsTermination None None
+    #create_per_site_sql_db_from_controller $dbServerType $dbIP $dbadminloginazure $dbadminpass $moodledbname $moodledbuser $moodledbpass None None None
+    #setup_and_config_per_site_moodle_on_controller $httpsTermination $siteFQDN $dbServerType $moodleHtmlDir $moodleDataDir $dbIP $moodledbname $azuremoodledbuser $moodledbpass $adminpass
+    #setup_per_site_moodle_cron_jobs_on_controller $moodleHtmlDir $siteFQDN $dbServerType $dbIP $moodledbname $azuremoodledbuser $moodledbpass
 }
 
 # Long Redis cache Moodle config file generation code moved here

@@ -160,18 +160,18 @@ set -ex
     service php${PhpVer}-fpm stop
 
     if [ $fileServerType = "azurefiles" ]; then
-        # Delayed copy of moodle installation to the Azure Files share
+        # Delayed copy of azlamp installation to the Azure Files share
 
         # First rename azlamp directory to something else
         mv /azlamp /azlamp_old_delete_me
-        # Then create the moodle share
+        # Then create the azlamp share
         echo -e '\n\rCreating an Azure Files share for azlamp'
         create_azure_files_share azlamp $storageAccountName $storageAccountKey /tmp/wabs.log
         # Set up and mount Azure Files share. Must be done after nginx is installed because of www-data user/group
         echo -e '\n\rSetting up and mounting Azure Files share on //'$storageAccountName'.file.core.windows.net/azlamp on /azlamp\n\r'
         setup_and_mount_azure_files_share azlamp $storageAccountName $storageAccountKey
         # Move the local installation over to the Azure Files
-        echo -e '\n\rMoving locally installed moodle over to Azure Files'
+        echo -e '\n\rMoving locally installed azlamp over to Azure Files'
         cp -a /azlamp_old_delete_me/* /azlamp || true # Ignore case sensitive directory copy failure
         # rm -rf /azlamp_old_delete_me || true # Keep the files just in case
     fi

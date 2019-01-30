@@ -118,7 +118,7 @@ EOF
 local1.*   @${syslogServer}:514
 local2.*   @${syslogServer}:514
 EOF
-  service syslog restart
+  systemctl restart syslog
 
   if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ]; then
     # Build nginx config
@@ -132,7 +132,6 @@ events {
 }
 
 http {
-
   sendfile on;
   tcp_nopush on;
   tcp_nodelay on;
@@ -221,7 +220,7 @@ EOF
    sed -i "s/;opcache.memory_consumption.*/opcache.memory_consumption = 256/" $PhpIni
    sed -i "s/;opcache.max_accelerated_files.*/opcache.max_accelerated_files = 8000/" $PhpIni
     
-   # Remove the default site. Moodle is the only site we want
+   # Remove the default site
    rm -f /etc/nginx/sites-enabled/default
    if [ "$webServerType" = "apache" ]; then
      rm -f /etc/apache2/sites-enabled/000-default.conf
@@ -231,7 +230,7 @@ EOF
      # update startup script to wait for certificate in /azlamp mount
      setup_azlamp_mount_dependency_for_systemd_service nginx || exit 1
      # restart Nginx
-     service nginx restart 
+     systemctl restart nginx
    fi
 
    if [ "$webServerType" = "nginx" ]; then
@@ -251,14 +250,14 @@ pm.max_spare_servers = 30
 EOF
 
      # Restart fpm
-     service php${PhpVer}-fpm restart
+     systemctl restart php${PhpVer}-fpm
    fi
 
    if [ "$webServerType" = "apache" ]; then
       if [ "$htmlLocalCopySwitch" != "true" ]; then
         setup_azlamp_mount_dependency_for_systemd_service apache2 || exit 1
       fi
-      service apache2 restart
+      systemctl restart apache2
    fi
 
 }  > /tmp/setup.log

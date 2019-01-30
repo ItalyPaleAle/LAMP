@@ -836,18 +836,6 @@
             "type": "string",
             "value": "[reference('scaleSetTemplate').outputs.webvm1IP.value]"
         },
-        "moodleAdminPassword": {
-            "type": "string",
-            "value": "[variables('lampCommon').moodleAdminPass]"
-        },
-        "moodleDbUsername": {
-            "type": "string",
-            "value": "[variables('lampCommon').moodleDbUserAzure]"
-        },
-        "moodleDbPassword": {
-            "type": "string",
-            "value": "[variables('lampCommon').moodleDbPass]"
-        },
         "loadBalancerDNS": {
             "type": "string",
             "value": "[variables('lampCommon').lbDns]"
@@ -924,13 +912,8 @@
             "lbName": "[concat('lb-',variables('resourceprefix'))]",
             "lbPipName": "[concat('lb-pubip-',variables('resourceprefix'))]",
             "location": "[parameters('location')]",
-            "moodleAdminPass": "[concat(toUpper('xl'), substring(uniqueString(resourceGroup().id, deployment().name), 6, 7),',1*8')]",
-            "moodleDbName": "moodle",
-            "moodleDbPass": "[concat('9#36^', substring(uniqueString(resourceGroup().id, deployment().name), 5, 8), toUpper('ercq'))]",
-            "moodleDbUser": "moodle",
-            "moodleDbUserAzure": "[concat('moodle', '@', parameters('dbServerType'), '-', variables('resourceprefix'))]",
             "controllerInstallScriptFilename": "setup_controller.sh",
-            "moodleOnAzureConfigsJsonPath": "/var/lib/cloud/instance/moodle_on_azure_configs.json",
+            "lampOnAzureConfigsJsonPath": "/var/lib/cloud/instance/lamp_on_azure_configs.json",
             "mssqlDbServiceObjectiveName": "[parameters('mssqlDbServiceObjectiveName')]",
             "mssqlDbSize": "[parameters('mssqlDbSize')]",
             "mssqlDbEdition": "[parameters('mssqlDbEdition')]",

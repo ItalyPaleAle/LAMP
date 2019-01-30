@@ -60,7 +60,7 @@
                                         ]
                                     },
                                     "protectedSettings":{
-                                        "commandToExecute": "[concat('bash ', parameters('lampCommon').webServerSetupScriptFilename, ' ', parameters('lampCommon').moodleOnAzureConfigsJsonPath)]"
+                                        "commandToExecute": "[concat('bash ', parameters('lampCommon').webServerSetupScriptFilename, ' ', parameters('lampCommon').lampOnAzureConfigsJsonPath)]"
                                     },
                                     "type": "CustomScript",
                                     "typeHandlerVersion": "2.0"
@@ -94,7 +94,7 @@
                     "osProfile": {
                         "adminUsername": "[parameters('lampCommon').sshUsername]",
                         "computerNamePrefix": "[parameters('lampCommon').vmssName]",
-                        "customData": "[base64(concat('#cloud-config\nwrite_files:\n- encoding: b64\n  content: ', base64(string(parameters('vmSetupParamsObj'))), '\n  owner: root:root\n  path: ', parameters('lampCommon').moodleOnAzureConfigsJsonPath, '\n  permissions: ', variables('singleQuote'), '0400', variables('singleQuote')))]",
+                        "customData": "[base64(concat('#cloud-config\nwrite_files:\n- encoding: b64\n  content: ', base64(string(parameters('vmSetupParamsObj'))), '\n  owner: root:root\n  path: ', parameters('lampCommon').lampOnAzureConfigsJsonPath, '\n  permissions: ', variables('singleQuote'), '0400', variables('singleQuote')))]",
                         "linuxConfiguration": {
                             "disablePasswordAuthentication": true,
                             "ssh": {

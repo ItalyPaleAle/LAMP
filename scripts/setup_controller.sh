@@ -35,16 +35,12 @@ set -ex
     echo $siteFQDN             >> /tmp/vars.txt
     echo $httpsTermination     >> /tmp/vars.txt
     echo $dbIP                 >> /tmp/vars.txt
-    echo $moodledbname         >> /tmp/vars.txt
-    echo $moodledbuser         >> /tmp/vars.txt
-    echo $moodledbpass         >> /tmp/vars.txt
     echo $adminpass            >> /tmp/vars.txt
     echo $dbadminlogin         >> /tmp/vars.txt
     echo $dbadminloginazure    >> /tmp/vars.txt
     echo $dbadminpass          >> /tmp/vars.txt
     echo $storageAccountName   >> /tmp/vars.txt
     echo $storageAccountKey    >> /tmp/vars.txt
-    echo $azuremoodledbuser    >> /tmp/vars.txt
     echo $redisDns             >> /tmp/vars.txt
     echo $redisAuth            >> /tmp/vars.txt
     echo $dbServerType                >> /tmp/vars.txt
@@ -59,6 +55,7 @@ set -ex
     check_fileServerType_param $fileServerType
 
     # make sure system does automatic updates and fail2ban
+    export DEBIAN_FRONTEND=noninteractive
     apt-get -y update
     apt-get -y install unattended-upgrades fail2ban
 
@@ -66,8 +63,6 @@ set -ex
 
     # create gluster, nfs or Azure Files mount point
     mkdir -p /azlamp
-
-    export DEBIAN_FRONTEND=noninteractive
 
     if [ $fileServerType = "gluster" ]; then
         # configure gluster repository & install gluster client
@@ -118,13 +113,11 @@ set -ex
     apt-get install -y --fix-missing python-software-properties unzip
 
     # install the entire stack
-    apt-get -y  --force-yes install nginx php-fpm >> /tmp/apt5a.log
-    apt-get -y  --force-yes install php php-cli php-curl php-zip >> /tmp/apt5b.log
+    apt-get -y --force-yes install nginx php-fpm php php-cli php-curl php-zip >> /tmp/apt5.log
 
     # LAMP requirements
     apt-get -y update > /dev/null
-    apt-get install -y --force-yes graphviz aspell php-common php-soap php-json php-redis > /tmp/apt6.log
-    apt-get install -y --force-yes php-bcmath php-gd php-xmlrpc php-intl php-xml php-bz2 php-pear php-mbstring php-dev mcrypt >> /tmp/apt6.log
+    apt-get install -y --force-yes php-common php-soap php-json php-redis php-bcmath php-gd php-xmlrpc php-intl php-xml php-bz2 php-pear php-mbstring php-dev mcrypt >> /tmp/apt6.log
     PhpVer=$(get_php_version)
     if [ $dbServerType = "mysql" ]; then
         apt-get install -y --force-yes php-mysql
@@ -145,19 +138,19 @@ set -ex
 
     update_php_config_on_controller
 
-    # Remove the default site. Moodle is the only site we want
+    # Remove the default site
     rm -f /etc/nginx/sites-enabled/default
 
     # restart Nginx
-    service nginx restart
+    systemctl restart nginx
 
     # Master config for syslog
     config_syslog_on_controller
-    service rsyslog restart
+    systemctl restart rsyslog
 
     # Turning off services we don't need the controller running
-    service nginx stop
-    service php${PhpVer}-fpm stop
+    systemctl stop nginx
+    systemctl stop php${PhpVer}-fpm
 
     if [ $fileServerType = "azurefiles" ]; then
         # Delayed copy of azlamp installation to the Azure Files share
@@ -184,7 +177,7 @@ set -ex
     create_last_modified_time_update_script
     run_once_last_modified_time_update_script
 
-    # Install scripts for LAMP gen.
+    # Install scripts for LAMP
     mkdir -p /azlamp/bin
     cp helper_functions.sh /azlamp/bin/utils.sh
     chmod +x /azlamp/bin/utils.sh

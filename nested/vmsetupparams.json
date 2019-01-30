@@ -37,13 +37,7 @@
                 "thumbprintSslCert": "[parameters('lampCommon').thumbprintSslCert]",
                 "thumbprintCaCert": "[parameters('lampCommon').thumbprintCaCert]"
             },
-            "moodleProfile": {
-                "version": "[parameters('lampCommon').moodleVersion]",
-                "dbName": "[parameters('lampCommon').moodleDbName]",
-                "dbUser": "[parameters('lampCommon').moodleDbUser]",
-                "dbUserAzure": "[parameters('lampCommon').moodleDbUserAzure]",
-                "dbPassword": "[parameters('lampCommon').moodleDbPass]",
-                "adminPassword": "[parameters('lampCommon').moodleAdminPass]",
+            "lampProfile": {
                 "storageAccountName": "[parameters('lampCommon').storageAccountName]",
                 "storageAccountKey": "[parameters('storageAccountKey')]",
                 "redisDns": "[parameters('lampCommon').redisDns]",

@@ -95,8 +95,8 @@ Navigate to the WordPress content directory and run the following command:
 
 ```
 mkdir -p /azlamp/data/wpsitename.mydomain.com/wp-content/uploads
-cd /azlamp/html/wpsitename.mydomain.com
-ln -s /azlamp/data/wpsitename.mydomain.com/wp-content/uploads .
+ln -s /azlamp/data/wpsitename.mydomain.com/wp-content/uploads /azlamp/html/wpsitename.mydomain.com/wp-content/uploads
+chmod 0777 /azlamp/data/wpsitename.mydomain.com/wp-content/uploads
 ```
 
 This step is needed because the `<siteroot>/wp-content/uploads` directory need to be shared across all web frontend instances, and Wordpress configuration doesn't allow an external directory to be used as the uploads repository. In fact, Drupal also has a similar design, so a similar symbolic link will be needed for Drupal as well. This is in contrary to Moodle, which allows users to configure any external directory as its file storage location.

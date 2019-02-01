@@ -110,7 +110,7 @@ On the controller machine, look up the file `/azlamp/bin/update-vmss-config`. If
 ```
         #1)
         #    . /azlamp/bin/utils.sh
-        #    reset_all_sites_on_vmss true VMSS apache
+        #    reset_all_sites_on_vmss true VMSS
         #;;
 ```
 
@@ -121,11 +121,11 @@ If you are adding sites for the second or later time, you'll already have the ab
 ```
         1)
             . /azlamp/bin/utils.sh
-            reset_all_sites_on_vmss true VMSS apache
+            reset_all_sites_on_vmss true VMSS
         ;;
         2)
             . /azlamp/bin/utils.sh
-            reset_all_sites_on_vmss true VMSS apache
+            reset_all_sites_on_vmss true VMSS
         ;;
 ```
 

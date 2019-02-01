@@ -407,13 +407,13 @@ function config_one_site_on_vmss
   fi
 
   local certsDir="/azlamp/certs/$siteFQDN"
+  local PhpVer=$(get_php_version)
 
   if [ "$httpsTermination" = "VMSS" ]; then
     # Configure nginx/https
     cat <<EOF >> /etc/nginx/sites-enabled/${siteFQDN}.conf
 server {
         listen 443 ssl http2;
-        root ${htmlRootDir};
         index index.php index.html index.htm;
         server_name ${siteFQDN};
 
@@ -425,9 +425,10 @@ server {
 
         # Log to syslog
         error_log syslog:server=localhost,facility=local1,severity=error,tag=lamp;
-        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp lamp_combined;
+        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp combined;
 
-        location / {
+        root ${htmlRootDir};
+        location ~* \.php$ {
           include fastcgi_params;
           # Remove X-Powered-By, which is an information leak
           fastcgi_hide_header X-Powered-By;
@@ -447,14 +448,14 @@ EOF
 server {
         listen 80;
 	      index index.php index.html index.htm;
-        root ${htmlRootDir};
         server_name ${siteFQDN};
 
         # Log to syslog
         error_log syslog:server=localhost,facility=local1,severity=error,tag=lamp;
-        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp lamp_combined;
+        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp combined;
  
-        location / {
+        root ${htmlRootDir};
+        location ~* \.php$ {
           include fastcgi_params;
           # Remove X-Powered-By, which is an information leak
           fastcgi_hide_header X-Powered-By;
@@ -559,7 +560,6 @@ function create_per_site_nginx_conf_on_controller
     cat <<EOF >> /etc/nginx/sites-enabled/${siteFQDN}.conf
 server {
         listen 443 ssl http2;
-        root ${htmlRootDir};
         index index.php index.html index.htm;
         server_name ${siteFQDN};
 
@@ -571,9 +571,10 @@ server {
 
         # Log to syslog
         error_log syslog:server=localhost,facility=local1,severity=error,tag=lamp;
-        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp lamp_combined;
+        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp combined;
 
-        location / {
+        root ${htmlRootDir};
+        location ~* \.php$ {
           include fastcgi_params;
           # Remove X-Powered-By, which is an information leak
           fastcgi_hide_header X-Powered-By;
@@ -593,14 +594,14 @@ EOF
 server {
         listen 80;
 	      index index.php index.html index.htm;
-        root ${htmlRootDir};
         server_name ${siteFQDN};
 
         # Log to syslog
         error_log syslog:server=localhost,facility=local1,severity=error,tag=lamp;
-        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp lamp_combined;
+        access_log syslog:server=localhost,facility=local1,severity=notice,tag=lamp combined;
  
-        location / {
+        root ${htmlRootDir};
+        location ~* \.php$ {
           include fastcgi_params;
           # Remove X-Powered-By, which is an information leak
           fastcgi_hide_header X-Powered-By;

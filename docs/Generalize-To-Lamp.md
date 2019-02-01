@@ -79,7 +79,7 @@ implication, estoppel or otherwise.
 
 # Prepare deployed cluster for LAMP applications
 
-If you chose Apache as your `webServerType` and `true` for the `htmlLocalCopy` switch at your LAMP cluster deployment time, you can install additional LAMP sites on your  cluster, utilizing Apache's VirtualHost feature (we call this "LAMP generalization"). To manage your installed cluster, you'll first need to login to the LAMP cluster controller virtual machine. The directory you'll need to work out of is `/azlamp`. You will need privileged access which means that you'll either need to be root (superuser) or have *sudo* access. 
+If you chose `true` for the `htmlLocalCopy` switch at your LAMP cluster deployment time, you can install additional LAMP sites on your cluster, utilizing Nginx's virtual host feature. To manage your installed cluster, you'll first need to login to the LAMP cluster controller virtual machine. The directory you'll need to work out of is `/azlamp`. You will need privileged access which means that you'll either need to be root (superuser) or have *sudo* access. 
 
 
 ## Configuring the controller for a specific LAMP application (WordPress)

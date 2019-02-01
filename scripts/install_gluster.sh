@@ -35,6 +35,7 @@ RAIDPARTITION="/dev/md1p1"
 BLACKLIST="/dev/sda|/dev/sdb"
 
 # make sure the system does automatic update
+# TODO: ENSURE THIS IS CONFIGURED CORRECTLY
 apt-get -y update
 apt-get -y install unattended-upgrades
 

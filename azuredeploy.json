@@ -111,17 +111,6 @@
             },
             "type": "string"
         },
-        "webServerType": {
-            "defaultValue": "apache",
-            "allowedValues": [
-                "apache",
-                "nginx"
-            ],
-            "metadata": {
-                "description": "Web server type"
-            },
-            "type": "string"
-        },
         "autoscaleVmSku": {
             "defaultValue": "Standard_DS2_v2",
             "metadata": {
@@ -974,8 +963,7 @@
             "vnetGwDeploySwitch": "[parameters('vnetGwDeploySwitch')]",
             "vnetName": "[concat('vnet-',variables('resourceprefix'))]",
             "vpnType": "[parameters('vpnType')]",
-            "webServerSetupScriptFilename": "setup_webserver.sh",
-            "webServerType": "[parameters('webServerType')]"
+            "webServerSetupScriptFilename": "setup_webserver.sh"
         },
         "certUrlArray": [
             {

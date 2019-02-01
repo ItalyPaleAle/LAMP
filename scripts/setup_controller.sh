@@ -57,6 +57,7 @@ set -ex
     # make sure system does automatic updates and fail2ban
     export DEBIAN_FRONTEND=noninteractive
     apt-get -y update
+    # TODO: ENSURE THIS IS CONFIGURED CORRECTLY
     apt-get -y install unattended-upgrades fail2ban
 
     config_fail2ban
@@ -194,12 +195,12 @@ while true
 do
     case \$VERSION in
         # Uncomment the following block when adding/removing sites. Change the parameters if needed (default should work for most cases).
-        # true (or anything else): htmlLocalCopySwitch, VMSS (or anything else): https termination, apache (or nginx): web server type
+        # true (or anything else): htmlLocalCopySwitch, VMSS (or anything else): https termination
         # Add another block with the next version number for any further site addition/removal.
 
         #1)
         #    . /azlamp/bin/utils.sh
-        #    reset_all_sites_on_vmss true VMSS apache
+        #    reset_all_sites_on_vmss true VMSS
         #;;
 
         *)

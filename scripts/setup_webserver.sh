@@ -33,7 +33,6 @@ echo $glusterVolume  >> /tmp/vars.txt
 echo $siteFQDN >> /tmp/vars.txt
 echo $httpsTermination >> /tmp/vars.txt
 echo $syslogServer >> /tmp/vars.txt
-echo $webServerType >> /tmp/vars.txt
 echo $dbServerType >> /tmp/vars.txt
 echo $fileServerType >> /tmp/vars.txt
 echo $storageAccountName >> /tmp/vars.txt
@@ -47,6 +46,7 @@ check_fileServerType_param $fileServerType
 {
   # make sure the system does automatic update
   apt-get -y update
+  # TODO: ENSURE THIS IS CONFIGURED CORRECTLY
   apt-get -y install unattended-upgrades
 
   # install pre-requisites
@@ -64,19 +64,7 @@ check_fileServerType_param $fileServerType
   fi
 
   # install the base stack
-  apt-get -y install php php-cli php-curl php-zip php-pear php-mbstring php-dev mcrypt php-soap php-json php-redis php-bcmath php-gd php-pgsql php-mysql php-xmlrpc php-intl php-xml php-bz2
-
-  if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ]; then
-    apt-get -y install nginx
-  fi
-
-  if [ "$webServerType" = "apache" ]; then
-    # install apache pacakges
-    apt-get -y install apache2 libapache2-mod-php
-  else
-    # for nginx-only option
-    apt-get -y install php-fpm
-  fi
+  apt-get -y install nginx php php-fpm php-cli php-curl php-zip php-pear php-mbstring php-dev mcrypt php-soap php-json php-redis php-bcmath php-gd php-pgsql php-mysql php-xmlrpc php-intl php-xml php-bz2
 
   # MSSQL
   if [ "$dbServerType" = "mssql" ]; then
@@ -120,9 +108,8 @@ local2.*   @${syslogServer}:514
 EOF
   systemctl restart syslog
 
-  if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ]; then
-    # Build nginx config
-    cat <<EOF > /etc/nginx/nginx.conf
+  # Build nginx config
+  cat <<EOF > /etc/nginx/nginx.conf
 user www-data;
 worker_processes 2;
 pid /run/nginx.pid;
@@ -133,6 +120,7 @@ events {
 
 http {
   sendfile on;
+  server_tokens off;
   tcp_nopush on;
   tcp_nodelay on;
   keepalive_timeout 65;
@@ -161,29 +149,12 @@ http {
   gzip_comp_level 6;
   gzip_buffers 16 8k;
   gzip_http_version 1.1;
-  gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
-EOF
-    if [ "$httpsTermination" != "None" ]; then
-      cat <<EOF >> /etc/nginx/nginx.conf
-  map \$http_x_forwarded_proto \$fastcgi_https {                                                                                          
-    default \$https;                                                                                                                   
-    http '';                                                                                                                          
-    https on;                                                                                                                         
-  }
-EOF
-    fi
-
-    cat <<EOF >> /etc/nginx/nginx.conf
-  log_format moodle_combined '\$remote_addr - \$upstream_http_x_moodleuser [\$time_local] '
-                             '"\$request" \$status \$body_bytes_sent '
-                             '"\$http_referer" "\$http_user_agent"';
-
+  gzip_types application/atom+xml application/javascript application/json application/ld+json application/manifest+json application/rss+xml application/vnd.geo+json application/vnd.ms-fontobject application/x-font-ttf application/x-web-app-manifest+json application/xhtml+xml application/xml font/opentype image/bmp image/svg+xml image/x-icon text/cache-manifest text/css text/plain text/vcard text/vnd.rim.location.xloc text/vtt text/x-component text/x-cross-domain-policy
 
   include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*;
 }
 EOF
-  fi # if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ];
 
   # Set up html dir local copy if specified
   if [ "$htmlLocalCopySwitch" = "true" ]; then
@@ -192,50 +163,35 @@ EOF
     setup_html_local_copy_cron_job
   fi
 
-  if [ "$webServerType" = "apache" ]; then
-    # Configure Apache/php
-    sed -i "s/Listen 80/Listen 81/" /etc/apache2/ports.conf
-    a2enmod rewrite && a2enmod remoteip && a2enmod headers
-  fi
+  config_all_sites_on_vmss $htmlLocalCopySwitch $httpsTermination
 
-  config_all_sites_on_vmss $htmlLocalCopySwitch $httpsTermination $webServerType
-
-   # php config 
-   if [ "$webServerType" = "apache" ]; then
-     PhpIni=/etc/php/${PhpVer}/apache2/php.ini
-   else
-     PhpIni=/etc/php/${PhpVer}/fpm/php.ini
-   fi
-   sed -i "s/memory_limit.*/memory_limit = 512M/" $PhpIni
-   sed -i "s/max_execution_time.*/max_execution_time = 18000/" $PhpIni
-   sed -i "s/max_input_vars.*/max_input_vars = 100000/" $PhpIni
-   sed -i "s/max_input_time.*/max_input_time = 600/" $PhpIni
-   sed -i "s/upload_max_filesize.*/upload_max_filesize = 1024M/" $PhpIni
-   sed -i "s/post_max_size.*/post_max_size = 1056M/" $PhpIni
-   sed -i "s/;opcache.use_cwd.*/opcache.use_cwd = 1/" $PhpIni
-   sed -i "s/;opcache.validate_timestamps.*/opcache.validate_timestamps = 1/" $PhpIni
-   sed -i "s/;opcache.save_comments.*/opcache.save_comments = 1/" $PhpIni
-   sed -i "s/;opcache.enable_file_override.*/opcache.enable_file_override = 0/" $PhpIni
-   sed -i "s/;opcache.enable.*/opcache.enable = 1/" $PhpIni
-   sed -i "s/;opcache.memory_consumption.*/opcache.memory_consumption = 256/" $PhpIni
-   sed -i "s/;opcache.max_accelerated_files.*/opcache.max_accelerated_files = 8000/" $PhpIni
+  # php config 
+  PhpIni=/etc/php/${PhpVer}/fpm/php.ini
+  sed -i "s/memory_limit.*/memory_limit = 512M/" $PhpIni
+  sed -i "s/max_execution_time.*/max_execution_time = 18000/" $PhpIni
+  sed -i "s/max_input_vars.*/max_input_vars = 100000/" $PhpIni
+  sed -i "s/max_input_time.*/max_input_time = 600/" $PhpIni
+  sed -i "s/upload_max_filesize.*/upload_max_filesize = 1024M/" $PhpIni
+  sed -i "s/post_max_size.*/post_max_size = 1056M/" $PhpIni
+  sed -i "s/;opcache.use_cwd.*/opcache.use_cwd = 1/" $PhpIni
+  sed -i "s/;opcache.validate_timestamps.*/opcache.validate_timestamps = 1/" $PhpIni
+  sed -i "s/;opcache.save_comments.*/opcache.save_comments = 1/" $PhpIni
+  sed -i "s/;opcache.enable_file_override.*/opcache.enable_file_override = 0/" $PhpIni
+  sed -i "s/;opcache.enable.*/opcache.enable = 1/" $PhpIni
+  sed -i "s/;opcache.memory_consumption.*/opcache.memory_consumption = 256/" $PhpIni
+  sed -i "s/;opcache.max_accelerated_files.*/opcache.max_accelerated_files = 8000/" $PhpIni
     
-   # Remove the default site
-   rm -f /etc/nginx/sites-enabled/default
-   if [ "$webServerType" = "apache" ]; then
-     rm -f /etc/apache2/sites-enabled/000-default.conf
-   fi
+  # Remove the default nginx site
+  rm -f /etc/nginx/sites-enabled/default
 
-   if [ "$webServerType" = "nginx" -o "$httpsTermination" = "VMSS" ]; then
-     # update startup script to wait for certificate in /azlamp mount
-     setup_azlamp_mount_dependency_for_systemd_service nginx || exit 1
-     # restart Nginx
-     systemctl restart nginx
-   fi
+  # update startup script to wait for certificate in /azlamp mount
+  setup_azlamp_mount_dependency_for_systemd_service nginx || exit 1
 
-   if [ "$webServerType" = "nginx" ]; then
-     # fpm config - overload this 
-     cat <<EOF > /etc/php/${PhpVer}/fpm/pool.d/www.conf
+  # restart nginx
+  systemctl restart nginx
+
+  # fpm config - overload this 
+  cat <<EOF > /etc/php/${PhpVer}/fpm/pool.d/www.conf
 [www]
 user = www-data
 group = www-data
@@ -249,15 +205,7 @@ pm.min_spare_servers = 20
 pm.max_spare_servers = 30 
 EOF
 
-     # Restart fpm
-     systemctl restart php${PhpVer}-fpm
-   fi
-
-   if [ "$webServerType" = "apache" ]; then
-      if [ "$htmlLocalCopySwitch" != "true" ]; then
-        setup_azlamp_mount_dependency_for_systemd_service apache2 || exit 1
-      fi
-      systemctl restart apache2
-   fi
+  # Restart php-fpm
+  systemctl restart php${PhpVer}-fpm
 
 }  > /tmp/setup.log

@@ -188,17 +188,6 @@ Possible Values: null
 Default: Standard_DS1_v2
 
 
-### webServerType
-
-Web server type
-
-Type: string
-
-Possible Values: ["apache","nginx"]
-
-Default: apache
-
-
 ### autoscaleVmSku
 
 VM size for autoscaled web VMs

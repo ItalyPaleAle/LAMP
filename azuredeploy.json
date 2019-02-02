@@ -33,7 +33,7 @@
         "redisDeploySwitch": {
             "defaultValue": false,
             "metadata": {
-                "description": "Switch to deploy a redis cache or not. Note that certain versions of Moodle (e.g., 3.1) don't work well with Redis, so use this only for known well-working Moodle versions (e.g., 3.4)."
+                "description": "Switch to deploy a Redis Cache or not."
             },
             "type": "bool"
         },
@@ -47,7 +47,7 @@
         "htmlLocalCopySwitch": {
             "defaultValue": true,
             "metadata": {
-                "description": "Switch to create a local copy of /moodle/html or not"
+                "description": "Switch to create a local copy of /azlamp/html or not"
             },
             "type": "bool"
         },
@@ -80,7 +80,7 @@
             ],
             "defaultValue": "VMSS",
             "metadata": {
-                "description": "Indicates where https termination occurs. 'VMSS' is for https termination at the VMSS instance VMs (using nginx https proxy). 'AppGw' is for https termination with an Azure Application Gateway. When selecting this, you need to specify all appGw* parameters. 'None' is for testing only with no https. 'None' may not be used with a separately configured https termination layer. If you want to use the 'None' option with your separately configured https termination layer, you'll need to update your Moodle config.php manually for $cfg->wwwroot and $cfg->sslproxy."
+                "description": "Indicates where https termination occurs. 'VMSS' is for https termination at the VMSS instance VMs (using nginx https proxy). 'AppGw' is for https termination with an Azure Application Gateway. When selecting this, you need to specify all appGw* parameters. 'None' is for testing only with no https. 'None' may not be used with a separately configured https termination layer."
             },
             "type": "string"
         },
@@ -441,21 +441,21 @@
                 "Standard_ZRS"
             ],
             "metadata": {
-                "description": "Storage Account type. This storage account is only for the Moodle ObjectFS plugin and/or the (currently disabled) Azure Files file share option"
+                "description": "Storage Account type. This storage account is only for the (currently disabled) Azure Files file share option"
             },
             "type": "string"
         },
         "customVnetId": {
             "defaultValue": "",
             "metadata": {
-                "description": "Azure Resource ID of the Azure virtual network where you want to deploy your Moodle resources. A vnet resource ID is of the following format: /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx/resourceGroups/gggg/providers/Microsoft.Network/virtualNetworks/vvvv. Note that this virtual network must be on the same Azure location as this template deployment location. If this parameter is blank, a new Azure virtual network will be created and used. In that case, the address space of the newly created virtual network will be */16 of the following vNetAddressSpace parameter value below."
+                "description": "Azure Resource ID of the Azure virtual network where you want to deploy your LAMP resources. A vnet resource ID is of the following format: /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx/resourceGroups/gggg/providers/Microsoft.Network/virtualNetworks/vvvv. Note that this virtual network must be on the same Azure location as this template deployment location. If this parameter is blank, a new Azure virtual network will be created and used. In that case, the address space of the newly created virtual network will be */16 of the following vNetAddressSpace parameter value below."
             },
             "type": "string"
         },
         "vNetAddressSpace": {
             "defaultValue": "172.31.0.0",
             "metadata": {
-                "description": "Address range for the Moodle virtual network and various subnets - presumed /16 for a newly created vnet in case customVnetId is blank. Further subneting (a number of */24 subnets starting from the xxx.yyy.zzz.0/24 will be created on a newly created vnet or your BYO-vnet (specified in customVnetId parameter)."
+                "description": "Address range for the LAMP virtual network and various subnets - presumed /16 for a newly created vnet in case customVnetId is blank. Further subneting (a number of */24 subnets starting from the xxx.yyy.zzz.0/24 will be created on a newly created vnet or your BYO-vnet (specified in customVnetId parameter)."
             },
             "type": "string"
         },
@@ -835,7 +835,7 @@
         }
     },
     "variables": {
-        "documentation01": "This main-template calls multiple sub-templates to create the moodle system",
+        "documentation01": "This main-template calls multiple sub-templates to create the LAMP system",
         "documentation02": "    recoveryservices0   - dummy template (see next statement)",
         "documentation03": "    recoveryservices1   - creates a recovery vault that will be subsequently used by the VM Backup - a paramter swtich controls whethe is is called or bypassed",
         "documentation04": "    redis               - creates a redis cache",

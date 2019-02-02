@@ -303,7 +303,7 @@
         }
     ],
     "variables": {
-        "documentation01": "This sub-template creates a virtual network with a number of subnets and then creates the moodle load-balancer (or an Azure Application Gateway) with public IP/dns",
+        "documentation01": "This sub-template creates a virtual network with a number of subnets and then creates the load-balancer (or an Azure Application Gateway) with public IP/dns",
         "extBeID": "[concat(variables('extLbID'),'/backendAddressPools/',parameters('lampCommon').extBeName)]",
         "extFeID": "[concat(variables('extLbID'),'/frontendIPConfigurations/',parameters('lampCommon').extFeName)]",
         "extLbID": "[resourceId('Microsoft.Network/loadBalancers',parameters('lampCommon').lbName)]",

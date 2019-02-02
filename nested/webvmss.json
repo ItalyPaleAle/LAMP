@@ -49,7 +49,7 @@
                     "extensionProfile": {
                         "extensions": [
                             {
-                                "name": "setup_moodle",
+                                "name": "setup_lamp",
                                 "properties": {
                                     "autoUpgradeMinorVersion": true,
                                     "publisher": "Microsoft.Azure.Extensions",

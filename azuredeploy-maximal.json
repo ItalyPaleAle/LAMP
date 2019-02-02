@@ -55,6 +55,6 @@
     },
     "variables": {
         "documentation01": "This wrapper template calls the main-template with maximum configs and the only required parameter (sshPublicKey).",
-        "documentation02": "For the best-possible performance, highly available, and most Moodle features, other parameters are fixed in this tempalte and overriden as above."
+        "documentation02": "For the best-possible performance, and highly available. Other parameters are fixed in this tempalte and overriden as above."
     }
 }
